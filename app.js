@@ -132,7 +132,6 @@ function render() {
     rateEl.className   = 'card-value ' + (rate >= 0 ? 'pos' : 'neg');
   }
 
-  document.getElementById('s-count').textContent = records.length + '건';
 }
 
 function exportCSV() {
