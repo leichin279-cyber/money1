@@ -224,3 +224,7 @@ th.num { text-align: right; }
   tbody td { font-size: 12px; padding: 10px 8px; }
   .num { font-size: 12px; }
 }
+
+/* 롱프레스 피드백 */
+.data-row { -webkit-user-select: none; user-select: none; }
+.data-row:active td { background: var(--red-bg) !important; transition: background 0.1s; }
