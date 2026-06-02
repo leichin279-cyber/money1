@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>주식 가계부</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <div class="logo">주식 가계부 <span>Stock Ledger</span></div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="exportCSV()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
+      CSV 내보내기
+    </button>
+    <button class="icon-btn danger" onclick="clearAll()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      전체 삭제
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="summary">
+    <div class="card"><div class="card-label">총 매수금액</div><div class="card-value" id="s-buy">0원</div></div>
+    <div class="card"><div class="card-label">총 매도금액</div><div class="card-value" id="s-sell">0원</div></div>
+    <div class="card"><div class="card-label">실현 손익</div><div class="card-value" id="s-pnl">0원</div></div>
+    <div class="card"><div class="card-label">수익률</div><div class="card-value" id="s-rate">—</div></div>
+    <div class="card"><div class="card-label">거래 횟수</div><div class="card-value" id="s-count">0건</div></div>
+  </div>
+
+  <div class="input-section">
+    <div class="input-grid">
+      <div class="field"><label>종목명</label><input type="text" id="f-name" placeholder="삼성전자" /></div>
+      <div class="field"><label>구분</label><select id="f-type"><option value="buy">매수</option><option value="sell">매도</option></select></div>
+      <div class="field"><label>단가 (원)</label><input type="number" id="f-price" placeholder="75000" min="0" /></div>
+      <div class="field"><label>수량 (주)</label><input type="number" id="f-qty" placeholder="10" min="1" /></div>
+      <button class="btn-submit" onclick="addRecord()">추가</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header">
+      <span class="table-title">거래 내역</span>
+      <span class="record-count" id="record-count">0건</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>날짜</th><th>종목</th><th>구분</th>
+          <th class="num">단가</th><th class="num">수량</th>
+          <th class="num">금액</th><th class="num">손익</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
