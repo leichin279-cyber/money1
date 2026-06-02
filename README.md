@@ -1,46 +1,52 @@
-# 📒 주식 가계부
+# 📒 주식 가계부 (PWA)
 
-브라우저에서 바로 사용하는 심플한 주식 거래 기록 앱입니다.  
-별도 서버나 회원가입 없이 **localStorage**에 데이터를 저장합니다.
+브라우저에서 바로 쓰고, 스마트폰·PC에 **앱처럼 설치**할 수 있는 주식 거래 기록 앱입니다.
 
 ## ✨ 기능
 
 - 매수 / 매도 거래 기록
-- 평균 단가 기반 **실현 손익 자동 계산**
-- 브라우저 localStorage에 **영구 저장** (새로고침·재시작 후에도 유지)
-- **CSV 내보내기** (엑셀 호환)
+- 평균 단가 기반 실현 손익 자동 계산
+- 브라우저 localStorage 영구 저장
+- CSV 내보내기
+- **앱 설치 버튼** (Android/Chrome/Edge: 자동 팝업 / iOS: 배너 안내)
+- **오프라인 동작** (Service Worker 캐시)
 - 모바일 반응형
 
 ## 🗂️ 파일 구조
 
 ```
 stock-ledger/
-├── index.html   # 마크업
-├── style.css    # 스타일
-├── app.js       # 데이터 로직
+├── index.html      # 마크업
+├── style.css       # 스타일
+├── app.js          # 거래 데이터 로직
+├── pwa.js          # 설치 버튼 + Service Worker 등록
+├── sw.js           # Service Worker (오프라인 캐시)
+├── manifest.json   # PWA 메타 정보
+├── icons/
+│   ├── icon-192.png
+│   └── icon-512.png
 └── README.md
 ```
 
-## 🚀 GitHub Pages 배포 방법
+## 🚀 GitHub Pages 배포
 
-1. 이 저장소를 GitHub에 업로드
-2. 저장소 **Settings → Pages**
-3. Source: `Deploy from a branch`
-4. Branch: `main` / `/ (root)` 선택 후 Save
-5. 잠시 후 `https://<유저명>.github.io/<저장소명>/` 에서 접속 가능
+1. GitHub 새 저장소 생성
+2. 모든 파일 업로드 (icons 폴더 포함)
+3. Settings → Pages → Branch: `main` / `/(root)` → Save
+4. `https://<유저명>.github.io/<저장소명>/` 접속
 
-## 💡 손익 계산 방식
+> ⚠️ **HTTPS 필수**: PWA 설치는 HTTPS에서만 동작합니다. GitHub Pages는 자동으로 HTTPS를 제공합니다.
 
-매도 시 해당 종목의 **가중평균 매수 단가** 기준으로 계산합니다.
+## 📲 설치 방법
+
+| 환경 | 방법 |
+|---|---|
+| Android Chrome | 주소창 우측 설치 아이콘 또는 헤더 **앱 설치** 버튼 |
+| PC Chrome/Edge | 주소창 우측 설치 아이콘 또는 헤더 **앱 설치** 버튼 |
+| iPhone/iPad Safari | 하단 공유 버튼 → 홈 화면에 추가 (배너 안내) |
+
+## 💡 손익 계산
 
 ```
-실현 손익 = (매도 단가 - 평균 매수 단가) × 수량
+실현 손익 = (매도 단가 − 가중평균 매수 단가) × 수량
 ```
-
-여러 번 나눠 매수한 경우 자동으로 평균 단가를 재계산합니다.
-
-## 📌 주의사항
-
-- 데이터는 **해당 브라우저에만** 저장됩니다
-- 다른 기기에서 이어 사용하려면 CSV로 백업하세요
-- 시크릿/프라이빗 모드에서는 저장되지 않습니다
