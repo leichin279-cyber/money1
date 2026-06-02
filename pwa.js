@@ -1,4 +1,4 @@
-/* ── PWA 설치 로직 ── */
+/* ── PWA 설치 로직 (Service Worker 없음) ── */
 
 let deferredPrompt = null;
 const installBtn = document.getElementById('installBtn');
@@ -8,24 +8,24 @@ const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone = window.navigator.standalone === true
   || window.matchMedia('(display-mode: standalone)').matches;
 
-/* 이미 설치된 앱이면 버튼 숨김 */
 if (isStandalone) {
+  /* 이미 설치된 앱으로 실행 중 → 버튼 숨김 */
   installBtn.style.display = 'none';
 } else if (isIos) {
-  /* iOS: 배너 안내 */
+  /* iOS Safari → 배너 안내 */
   const dismissed = sessionStorage.getItem('ios_banner_dismissed');
   if (!dismissed) iosBanner.style.display = 'flex';
   iosBanner.querySelector('button').addEventListener('click', () => {
     sessionStorage.setItem('ios_banner_dismissed', '1');
     iosBanner.style.display = 'none';
   });
-  installBtn.style.display = 'none'; /* iOS는 버튼 숨기고 배너로 안내 */
+  installBtn.style.display = 'none';
 } else {
-  /* Android / Chrome / Edge: 일단 버튼 보여두기 */
+  /* Android / Chrome / Edge → 버튼 항상 표시 */
   installBtn.style.display = 'flex';
 }
 
-/* beforeinstallprompt: 설치 팝업 준비됐을 때 */
+/* 브라우저가 설치 준비됐을 때 */
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
@@ -35,15 +35,13 @@ window.addEventListener('beforeinstallprompt', e => {
 /* 설치 버튼 클릭 */
 function installApp() {
   if (deferredPrompt) {
-    /* 브라우저 설치 팝업 */
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(result => {
       if (result.outcome === 'accepted') installBtn.style.display = 'none';
       deferredPrompt = null;
     });
   } else {
-    /* 팝업 준비 안 됐을 때 안내 */
-    alert('설치하려면:\n\n① 주소창 오른쪽 설치 아이콘(⊕)을 클릭하거나\n② 브라우저 메뉴 → "앱 설치" 또는 "홈 화면에 추가"를 선택하세요.');
+    alert('설치 방법:\n\n📱 Android: 주소창 오른쪽 설치 아이콘(⊕) 클릭\n💻 PC: 주소창 오른쪽 설치 아이콘 클릭\n🍎 iPhone: 하단 공유 버튼 → 홈 화면에 추가');
   }
 }
 
@@ -53,11 +51,9 @@ window.addEventListener('appinstalled', () => {
   deferredPrompt = null;
 });
 
-/* Service Worker */
+/* Service Worker 완전 제거 */
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW:', reg.scope))
-      .catch(err => console.warn('SW 실패:', err));
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(reg => reg.unregister());
   });
 }
