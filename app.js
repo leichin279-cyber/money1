@@ -52,7 +52,7 @@ function addRecord() {
 }
 
 function deleteRecord(i) {
-  if (!confirm('이 거래를 삭제할까요?')) return;
+  if (!confirm(`"${records[i].name}" 거래를 삭제할까요?`)) return;
   records.splice(i, 1);
   rebuildAvg();
   save();
@@ -82,6 +82,35 @@ function rebuildAvg() {
 
 function w(n) { return Math.round(n).toLocaleString('ko-KR') + '원'; }
 
+/* ── 길게 누르기 (롱프레스) ── */
+let longPressTimer = null;
+let longPressIndex = null;
+
+function onRowTouchStart(e, i) {
+  longPressIndex = i;
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null;
+    /* 진동 피드백 (지원 기기) */
+    if (navigator.vibrate) navigator.vibrate(50);
+    deleteRecord(i);
+  }, 600);
+}
+
+function onRowTouchEnd() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+function onRowTouchMove() {
+  /* 스크롤 중에는 롱프레스 취소 */
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
 function render() {
   const tbody = document.getElementById('tbody');
   document.getElementById('record-count').textContent = records.length + '건';
@@ -100,7 +129,11 @@ function render() {
       } else {
         pnlCell = '<span class="pnl-none">—</span>';
       }
-      return `<tr>
+      return `<tr
+        ontouchstart="onRowTouchStart(event,${i})"
+        ontouchend="onRowTouchEnd()"
+        ontouchmove="onRowTouchMove()"
+        class="data-row">
         <td style="color:var(--text3);font-size:12px;font-family:var(--mono)">${r.date}</td>
         <td style="font-weight:500">${r.name}</td>
         <td>${badge}</td>
@@ -131,7 +164,6 @@ function render() {
     rateEl.textContent = (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
     rateEl.className   = 'card-value ' + (rate >= 0 ? 'pos' : 'neg');
   }
-
 }
 
 function exportCSV() {
