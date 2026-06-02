@@ -82,35 +82,134 @@ function rebuildAvg() {
 
 function w(n) { return Math.round(n).toLocaleString('ko-KR') + '원'; }
 
-/* ── 길게 누르기 (롱프레스) ── */
+/* ── CSV 내보내기 (모바일 호환) ── */
+function exportCSV() {
+  if (records.length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
+  const header = '날짜,종목,구분,단가,수량,금액,손익\n';
+  const rows = records.map(r =>
+    `${r.date},${r.name},${r.type === 'buy' ? '매수' : '매도'},${r.price},${r.qty},${Math.round(r.amount)},${r.pnl !== null ? Math.round(r.pnl) : ''}`
+  ).join('\n');
+  const csvContent = '\uFEFF' + header + rows;
+
+  try {
+    /* 방법 1: 일반 다운로드 */
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '주식가계부_' + today().replace(/\./g, '') + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (e) {
+    /* 방법 2: 모바일 폴백 — 텍스트로 직접 보여주기 */
+    showCSVText(csvContent);
+  }
+}
+
+/* 모바일에서 다운로드 안 될 때: 텍스트 복사 모달 */
+function showCSVText(csvContent) {
+  document.getElementById('csvTextArea').value = csvContent;
+  document.getElementById('csvModal').style.display = 'flex';
+}
+
+function closeCSVModal() {
+  document.getElementById('csvModal').style.display = 'none';
+}
+
+function copyCSV() {
+  const ta = document.getElementById('csvTextArea');
+  ta.select();
+  ta.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(ta.value).then(() => {
+      alert('복사되었습니다!\n\n구글시트 또는 엑셀에 붙여넣기 하세요.');
+    });
+  } catch (e) {
+    document.execCommand('copy');
+    alert('복사되었습니다!\n\n구글시트 또는 엑셀에 붙여넣기 하세요.');
+  }
+}
+
+/* ── CSV 가져오기 (다른 기기에서 불러오기) ── */
+function importCSV() {
+  document.getElementById('csvImportInput').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      let text = ev.target.result;
+      /* BOM 제거 */
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      const lines = text.trim().split('\n');
+      /* 헤더 제거 */
+      const dataLines = lines.slice(1).filter(l => l.trim());
+      if (dataLines.length === 0) { alert('데이터가 없습니다.'); return; }
+
+      const imported = [];
+      for (const line of dataLines) {
+        const cols = line.split(',');
+        if (cols.length < 6) continue;
+        const [date, name, typeStr, priceStr, qtyStr, amountStr, pnlStr] = cols;
+        const type   = typeStr.trim() === '매수' ? 'buy' : 'sell';
+        const price  = parseFloat(priceStr);
+        const qty    = parseInt(qtyStr);
+        const amount = parseFloat(amountStr);
+        const pnl    = pnlStr && pnlStr.trim() !== '' ? parseFloat(pnlStr) : null;
+        if (!name || isNaN(price) || isNaN(qty)) continue;
+        imported.push({ date: date.trim(), name: name.trim(), type, price, qty, amount, pnl });
+      }
+
+      if (imported.length === 0) { alert('불러올 수 있는 데이터가 없습니다.'); return; }
+
+      const mode = confirm(
+        `${imported.length}건을 불러옵니다.\n\n확인 → 기존 데이터에 추가\n취소 → 기존 데이터 삭제 후 교체`
+      );
+      if (mode) {
+        /* 추가 */
+        records = [...records, ...imported];
+      } else {
+        /* 교체 */
+        records = imported;
+      }
+      rebuildAvg();
+      save();
+      render();
+      alert(`${imported.length}건 불러오기 완료!`);
+    } catch (err) {
+      alert('파일을 읽는 중 오류가 발생했습니다.');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+  /* 같은 파일 재선택 가능하도록 초기화 */
+  e.target.value = '';
+}
+
+/* ── 롱프레스 삭제 ── */
 let longPressTimer = null;
-let longPressIndex = null;
 
 function onRowTouchStart(e, i) {
-  longPressIndex = i;
   longPressTimer = setTimeout(() => {
     longPressTimer = null;
-    /* 진동 피드백 (지원 기기) */
     if (navigator.vibrate) navigator.vibrate(50);
     deleteRecord(i);
   }, 600);
 }
 
 function onRowTouchEnd() {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 }
 
 function onRowTouchMove() {
-  /* 스크롤 중에는 롱프레스 취소 */
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 }
 
+/* ── 렌더 ── */
 function render() {
   const tbody = document.getElementById('tbody');
   document.getElementById('record-count').textContent = records.length + '건';
@@ -155,8 +254,8 @@ function render() {
   document.getElementById('s-sell').textContent = w(totalSell);
 
   const pnlEl = document.getElementById('s-pnl');
-  pnlEl.textContent  = (totalPnl >= 0 ? '+' : '') + Math.round(totalPnl).toLocaleString('ko-KR') + '원';
-  pnlEl.className    = 'card-value ' + (totalPnl >= 0 ? 'pos' : 'neg');
+  pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + Math.round(totalPnl).toLocaleString('ko-KR') + '원';
+  pnlEl.className   = 'card-value ' + (totalPnl >= 0 ? 'pos' : 'neg');
 
   const rateEl = document.getElementById('s-rate');
   if (rate === null) { rateEl.textContent = '—'; rateEl.className = 'card-value'; }
@@ -164,19 +263,6 @@ function render() {
     rateEl.textContent = (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
     rateEl.className   = 'card-value ' + (rate >= 0 ? 'pos' : 'neg');
   }
-}
-
-function exportCSV() {
-  if (records.length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
-  const header = '날짜,종목,구분,단가,수량,금액,손익\n';
-  const rows = records.map(r =>
-    `${r.date},${r.name},${r.type === 'buy' ? '매수' : '매도'},${r.price},${r.qty},${Math.round(r.amount)},${r.pnl !== null ? Math.round(r.pnl) : ''}`
-  ).join('\n');
-  const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = '주식가계부.csv'; a.click();
-  URL.revokeObjectURL(url);
 }
 
 document.getElementById('f-name').addEventListener('keydown', e => { if (e.key === 'Enter') addRecord(); });
