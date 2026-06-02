@@ -1,33 +1,9 @@
-const CACHE = 'stock-ledger-v2';
-const ASSETS = [
-  './index.html',
-  './style.css',
-  './app.js',
-  './pwa.js',
-  './manifest.json'
-];
-
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(ASSETS))
-      .then(() => self.skipWaiting())
-  );
-});
-
+/* 비어있는 sw.js - 기존 캐시 모두 삭제 */
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request)
-      .then(cached => cached || fetch(e.request)
-        .catch(() => caches.match('./index.html'))
-      )
   );
 });
